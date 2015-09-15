@@ -1,0 +1,321 @@
+<?php
+session_start();
+if (isset($_SERVER["QUERY_STRING"])) $queries = $_SERVER["QUERY_STRING"];
+if (!isset($_SESSION["root_path"]) OR !isset($_SESSION["in"]) OR !isset($_SESSION["user"])) { header("Location: /index.php".(isset($queries) ? "?{$queries}" : ""),true); die(); }
+require_once("{$_SESSION["root_path"]}/inc.php");
+require_once("{$_SESSION["root_path"]}/scripts_each_page.php");
+$user = new User($_SESSION["user"]);
+$user->set_last_seen("front_page");
+
+require_once("{$_SESSION["root_path"]}/page_top.php");
+
+$num_items = isMobile() ? 5 : 10;
+$months_back = isMobile() ? 1 : 3;
+?>
+<script type="text/javascript">
+$(function(){
+	// setting the page title
+	top.document.title = "<?php echo translate("Welcome to GCX!","Chào mừng đến với GCX!"); ?>";
+});
+</script>
+<style type="text/css">
+	.box_title{
+		font-size: 1.2em;
+		font-weight: bold;
+		color: #6B8E23;
+	}
+</style>
+<div style="font-size: 1.2em; font-weight: bold; margin: 10px;">
+	<span style="display: inline-block;"><a onClick="javascript: load_page('addnew_discussion.php');"><img src="files/site_images/layout/add-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Add new discussion","Đăng thảo luận mới"); ?></span></a></span>
+	<span style="display: inline-block;"><a onClick="javascript: load_page('discussions.php');"><img src="files/site_images/layout/discussion-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("View discussions","Xem trang thảo luận"); ?></span></a></span>
+</div>
+<?php if (!isMobile()): ?>
+<table width="100%" cellspacing="5" cellpadding="0" border="0" align="center"><tr><td class="wrap" style="width: 50%; text-align: left; vertical-align: top;" valign="top">
+<?php else: ?>
+<div class="wrap" style="text-align: left; vertical-align: middle; margin: 2px 0;">
+<?php endif; ?>
+	<div class="box_title"><img src="files/site_images/layout/discussion-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Recent discussions","Bài mới đăng"); ?></span></div>
+	<div style="margin-left: <?php echo (isMobile() ? "10" : "38"); ?>px; font-size: 0.8em;">
+	<?php
+	$q = mysql_query("SELECT * FROM `quick_discussions` WHERE `parent_id` = '0' ORDER BY `created` DESC, `id` DESC LIMIT {$num_items}");
+	while ($r = mysql_fetch_object($q)){
+		$item = new QuickDiscussion();
+		$item->load($r->id);
+		echo "<div style=\"vertical-align: middle;\"><img src=\"files/site_images/layout/discussion-16.png\" style=\"vertical-align: middle;\"/>";
+		echo "<span style=\"vertical-align: middle;\"> <a onClick=\"javascript: load_page('view_single_discussion.php?id={$item->id}');\">".(!empty($item->title) ? shorten_string($item->title,5) : shorten_string(strip_tags($item->body),5))."</a> </span>";
+		echo "<img src=\"files/site_images/layout/user-16.png\" style=\"vertical-align: middle;\"/> <span style=\"font-size: 0.9em; border-bottom: 1px solid #{$item->qd_author->color}; vertical-align: middle;\"><strong><em>{$item->qd_author->name}</em></strong></span> ";
+		echo "<span style=\"font-size: 0.9em; vertical-align: middle;\">(".(date_diff_short($item->created) == "0" ? translate("just now","mới đây") : (date_diff_short($item->created) === -1 ? translate("[unknown]","[không biết]") : date_diff_short($item->created)." ".translate("ago","trước"))).")</span>";
+		echo "</div>";
+	}
+	?>
+	</div>
+<?php if (!isMobile()): ?>
+</td><td class="wrap" style="width: 50%; text-align: left; vertical-align: top;" valign="top">
+<?php else: ?>
+</div>
+<div class="wrap" style="text-align: left; vertical-align: middle;">
+<?php endif; ?>
+	<div class="box_title"><img src="files/site_images/layout/pencil-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Recent edited discussions","Bài mới soạn"); ?></span></div>
+	<div style="margin-left: <?php echo (isMobile() ? "10" : "38"); ?>px; font-size: 0.8em;">
+	<?php
+	$q = mysql_query("SELECT * FROM `quick_discussions` WHERE `parent_id` = '0' AND `edited` > '0000-00-00 00:00:00' ORDER BY `edited` DESC, `id` DESC LIMIT {$num_items}");
+	while ($r = mysql_fetch_object($q)){
+		$item = new QuickDiscussion();
+		$item->load($r->id);
+		echo "<div style=\"vertical-align: middle;\"><img src=\"files/site_images/layout/discussion-16.png\" style=\"vertical-align: middle;\"/>";
+		echo "<span style=\"vertical-align: middle;\"> <a onClick=\"javascript: load_page('view_single_discussion.php?id={$item->id}');\">".(!empty($item->title) ? shorten_string($item->title,5) : shorten_string(strip_tags($item->body),5))."</a> </span>";
+		//echo "<img src=\"files/site_images/layout/user-16.png\" style=\"vertical-align: middle;\"/> <span style=\"font-size: 0.9em; border-bottom: 1px solid #{$item->qd_author->color}; vertical-align: middle;\"><strong><em>{$item->qd_author->name}</em></strong></span> ";
+		echo "<img src=\"files/site_images/layout/pencil-16.png\" style=\"vertical-align: middle;\"/> <span style=\"font-size: 0.9em; border-bottom: 1px solid #{$item->qd_editor->color}; vertical-align: middle;\"><strong><em>{$item->qd_editor->name}</em></strong></span> ";
+		echo "<span style=\"font-size: 0.9em; vertical-align: middle;\">(".(date_diff_short($item->edited) == "0" ? translate("just now","mới đây") : (date_diff_short($item->edited) === -1 ? translate("[unknown]","[không biết]") : date_diff_short($item->edited)." ".translate("ago","trước"))).")</span>";
+		echo "</div>";
+	}
+	?>
+	</div>
+</div>
+<?php if (!isMobile()): ?>
+</td></tr><tr><td class="wrap" style="width: 50%; text-align: left; vertical-align: top;" valign="top">
+<?php else: ?>
+</div>
+<div class="wrap" style="text-align: left; vertical-align: middle;">
+<?php endif; ?>
+	<div class="box_title"><img src="files/site_images/layout/unread-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Unread posts","Bài chưa đọc"); ?></span></div>
+	<div style="margin-left: <?php echo (isMobile() ? "10" : "38"); ?>px; font-size: 0.8em;">
+	<?php
+	$count = 0;
+	$q = mysql_query("SELECT * FROM `quick_discussions` WHERE `last_touched` > '".gmdate("Y-m-d H:i:s",strtotime("-{$months_back} month"))."' ORDER BY `last_touched` DESC , `id` DESC");
+	$parents_already_shown = array();
+	while ($r = mysql_fetch_object($q)){
+		if ($count == $num_items) break;
+		$item = new QuickDiscussion();
+		$item->load($r->id);
+		if (in_array($item->id,$parents_already_shown) OR in_array($item->parent_id,$parents_already_shown)) continue;
+		$show = false;
+		$user_read_status = mysql_query("SELECT `{$user->username}` FROM `quick_discussions_read_status` WHERE `postid` = '{$r->id}' AND `{$user->username}` > '1970-01-01 00:00:00'");
+		if (mysql_num_rows($user_read_status) == 0) $show = true;
+		else {
+			$a = mysql_fetch_object($user_read_status);
+			if ((strtotime($a->{$user->username}) < strtotime($r->last_touched))) $show = true;
+		}
+		if ($show === true){
+			$item_id = ($item->parent_id == 0 ? $item->id : $item->parent_id);
+			echo "<div style=\"vertical-align: middle;\"><img src=\"".($item->parent_id == 0 ? "files/site_images/layout/discussion-16.png" : "files/site_images/layout/comment-16.png")."\" style=\"vertical-align: middle;\"/>";
+			echo "<span style=\"vertical-align: middle;\"> <a onClick=\"javascript: load_page('view_single_discussion.php?id={$item_id}');\">".(!empty($item->title) ? $item->title : shorten_string(strip_tags($item->body),5))."</a> </span>";
+			//echo "<img src=\"files/site_images/layout/user-16.png\" style=\"vertical-align: middle;\"/> <span style=\"border-bottom: 1px solid #{$item->qd_author->color}; vertical-align: middle;\"><strong><em>{$item->qd_author->name}</em></strong></span> ";
+			//echo "<span style=\"vertical-align: middle;\">(".(date_diff_short($item->last_touched) == "0" ? translate("just now","mới đây") : (date_diff_short($item->last_touched) === -1 ? translate("[unknown]","[không biết]") : date_diff_short($item->last_touched)." ".translate("ago","trước"))).")</span>";
+			echo "</div>";
+			if ($item->parent_id == 0) $parents_already_shown[] = $item->id;
+			else $parents_already_shown[] = $item->parent_id;
+			$count++;
+		}
+	}
+	if ($count == 0)
+		echo "<div><em>".translate("No unread post found in the last {$months_back} month" . ($months_back > 1 ? "s" : ""),"Không bài nào chưa đọc trong {$months_back} tháng qua")."</em></div>";
+	?>
+	</div>
+<?php if (!isMobile()): ?>
+</td><td class="wrap" style="width: 50%; text-align: left; vertical-align: top;" valign="top">
+<?php else: ?>
+</div>
+<div class="wrap" style="text-align: left; vertical-align: middle;">
+<?php endif; ?>
+	<div class="box_title"><img src="files/site_images/layout/check-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Posts you just read","Bài vừa đọc"); ?></span></div>
+	<div style="margin-left: <?php echo (isMobile() ? "10" : "38"); ?>px; font-size: 0.8em;">
+	<?php
+		$sql = mysql_query("SELECT * FROM `quick_discussions_read_status` WHERE `{$user->username}` > '".gmdate("Y-m-d H:i:s",strtotime("-12 hour"))."' ORDER BY `{$user->username}` DESC , `postid` DESC");
+		$count = 0;
+		$parents_already_shown = array();
+		while ($r = mysql_fetch_object($sql)){
+			if ($count == $num_items) break;
+			$item = new QuickDiscussion();
+			$item->load($r->postid);
+			if (in_array($item->id,$parents_already_shown) OR in_array($item->parent_id,$parents_already_shown)) continue;
+			$item_id = ($item->parent_id == 0 ? $item->id : $item->parent_id);
+			echo "<div style=\"vertical-align: middle;\"><img src=\"".($item->parent_id == 0 ? "files/site_images/layout/discussion-16.png" : "files/site_images/layout/comment-16.png")."\" style=\"vertical-align: middle;\"/>";
+			echo "<span style=\"vertical-align: middle;\"> <a onClick=\"javascript: load_page('view_single_discussion.php?id={$item_id}');\">".(!empty($item->title) ? $item->title : shorten_string(strip_tags($item->body),5))."</a> </span>";
+			echo "<span style=\"vertical-align: middle; font-size: 0.9em;\">".(date_diff_short($r->{$user->username}) == "0" ? translate("just now","mới đây") : (date_diff_short($r->{$user->username}) === -1 ? translate("[unknown]","[không biết]") : date_diff_short($r->{$user->username})." ".translate("ago","trước")))."</span>";
+			echo "</div>";
+			if ($item->parent_id == 0) $parents_already_shown[] = $item->id;
+			else $parents_already_shown[] = $item->parent_id;
+			$count++;
+		}
+		if ($count == 0)
+			echo "<div><em>".translate("You didn't read anything in the last 12 hours","{$user->you} không đọc bài nào trong 12 tiếng qua")."</em></div>";
+	?>
+	</div>
+<?php if (!isMobile()): ?>
+</td></tr><tr><td class="wrap" style="width: 50%; text-align: left; vertical-align: top;" valign="top">
+<?php else: ?>
+</div>
+<div class="wrap" style="text-align: left; vertical-align: middle;">
+<?php endif; ?>
+<?php
+	$result = mysql_query("SELECT * FROM `users`");
+	$bds_this_month = array();
+	$bds_next_month = array();
+	while ($row = mysql_fetch_object($result)){
+		list($date,$time) = explode(" ",$row->dob);
+		list($year,$month,$day) = explode("-",$date);
+		if (strtotime(date("Y")."-{$month}") == strtotime(date("Y-m")))
+			$bds_this_month[] = array(date("Y")."-{$month}-{$day}",$row->username);
+		if (strtotime(date("Y",strtotime("next month"))."-{$month}") == strtotime(date("Y-m",strtotime("next month"))))
+			$bds_next_month[] = array(date("Y",strtotime("next month"))."-{$month}-{$day}",$row->username);
+	}
+	sort($bds_this_month);
+	sort($bds_next_month);
+?>
+	<div class="box_title"><img src="files/site_images/layout/birthday-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Birthdays this month","Sinh nhật trong tháng"); ?></span></div>
+	<div style="margin-left: <?php echo (isMobile() ? "10" : "38"); ?>px; font-size: 0.8em;">
+	<?php
+		$count = 0;
+		foreach($bds_this_month as $bd){
+			$theOne = new User($bd[1]);
+			$bdThisYear = $bd[0] . " 00:00:00";
+			?>
+			<div><img src="files/site_images/layout/user-16.png" style="vertical-align: middle;"/><strong style="vertical-align: middle;"> <span style="border-bottom: 1px solid #<?php echo (empty($theOne->color) ? "FFF" : $theOne->color); ?>;"><?php echo $theOne->name; ?></span> (<?php echo (date_diff_short($theOne->dob,$bdThisYear,true,true) > 1 ? date_diff_short($theOne->dob,$bdThisYear,true,true) . " " . translate("years old","tuổi") : date_diff_short($theOne->dob,$bdThisYear,true,true) . " " . translate("year old","tuổi")); ?>)</strong> <span style="font-size: 0.9em;"><?php echo get_date($bd[0]." 00:00:00"); ?></span></div>
+			<?php
+			$count++;
+		}
+		if ($count == 0)
+			echo "<div><em>".translate("No birthday this month","Không sinh nhật tháng nay")."</em></div>";
+	?>
+	</div>
+<?php if (!isMobile()): ?>
+</td><td class="wrap" style="width: 50%; text-align: left; vertical-align: top;" valign="top">
+<?php else: ?>
+</div>
+<div class="wrap" style="text-align: left; vertical-align: middle;">
+<?php endif; ?>
+	<div class="box_title"><img src="files/site_images/layout/birthday_next-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Birthdays next month","Sinh nhật trong tháng tới"); ?></span></div>
+	<div style="margin-left: <?php echo (isMobile() ? "10" : "38"); ?>px; font-size: 0.8em;">
+	<?php
+		$count = 0;
+		foreach($bds_next_month as $bd){
+			$theOne = new User($bd[1]);
+			$bdThisYear = $bd[0] . " 00:00:00";
+			?>
+			<div><img src="files/site_images/layout/user-16.png" style="vertical-align: middle;"/><strong style="vertical-align: middle;"> <span style="border-bottom: 1px solid #<?php echo (empty($theOne->color) ? "FFF" : $theOne->color); ?>;"><?php echo $theOne->name; ?></span> (<?php echo (date_diff_short($theOne->dob,$bdThisYear,true,true) > 1 ? date_diff_short($theOne->dob,$bdThisYear,true,true) . " " . translate("years old","tuổi") : date_diff_short($theOne->dob,$bdThisYear,true,true) . " " . translate("year old","tuổi")); ?>)</strong> <span style="font-size: 0.9em;"><?php echo get_date($bd[0]." 00:00:00"); ?></span></div>
+			<?php
+			$count++;
+		}
+		if ($count == 0)
+			echo "<div><em>".translate("No birthday next month","Không sinh nhật tháng tới")."</em></div>";
+	?>
+	</div>
+<?php if (!isMobile()): ?>
+</td></tr><tr><td class="wrap" style="width: 50%; text-align: left; vertical-align: top;" valign="top">
+<?php else: ?>
+</div>
+<div class="wrap" style="text-align: left; vertical-align: middle;">
+<?php endif; ?>
+<?php
+	$result = mysql_query("SELECT * FROM `events`");
+	$events_this_month = array();
+	$events_next_month = array();
+	$insert = false;
+	while ($row = mysql_fetch_object($result)){
+		switch($row->repeat){
+			case -1:
+				$string = $row->repeat_special . " " . date("Y");
+				//$string = str_replace("of ","",$string); // PHP 5.2 doesn't deal with 'of' in the relative date format
+				$date_this_year = date("Y-m-d H:i:s",strtotime($string));
+				$insert = true;
+				break;
+			case 0:
+				$date_this_year = $row->when;
+				$insert = true;
+				break;
+			case 1:
+				$date_this_year = get_next_date($row->when);
+				$insert = true;
+				break;
+			case 2:
+				// no need right now
+				break;
+			case 3:
+				// no need right now
+				break;
+		}
+		if ($insert){
+			list($date,$time) = explode(" ",$date_this_year);
+			list($year,$month,$day) = explode("-",$date);
+			if (strtotime("{$year}-{$month}") == strtotime(date("Y-m")))
+				$events_this_month[] = array(date("Y")."-{$month}-{$day}",$row->id);
+			if (strtotime("{$year}-{$month}") == strtotime(date("Y-m",strtotime("next month"))))
+				$events_next_month[] = array(date("Y",strtotime("next month"))."-{$month}-{$day}",$row->id);
+			$insert = false;
+		}
+	}
+	sort($events_this_month);
+	sort($events_next_month);
+?>
+	<div class="box_title"><img src="files/site_images/layout/calendar-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Events this month","Lể lộc trong tháng"); ?></span></div>
+	<div style="margin-left: <?php echo (isMobile() ? "10" : "38"); ?>px; font-size: 0.8em;">
+		<?php
+		$age = false;
+		foreach ($events_this_month as $event){
+			$theEvent = mysql_fetch_object(mysql_query("SELECT * FROM `events` WHERE `id` = '{$event[1]}'"));
+			$theEventThisYear = $event[0] . " 00:00:00";
+			switch($theEvent->category){
+				case "misc":
+				default:
+					$event_image = "/files/site_images/layout/calendar-16.png";
+					break;
+				case "holiday_f":
+				case "holiday_v":
+					$event_image = "/files/site_images/layout/mistletoe-16.png";
+					break;
+				case "get_together":
+					$event_image = "/files/site_images/layout/get_together-16.png";
+					break;
+				case "anniversary":
+					$age = true;
+					$event_image = "/files/site_images/layout/anniversary-16.png";
+					break;
+			}
+			echo "<div><img src='{$event_image}' style='vertical-align: middle;'/><span style='vertical-align: middle;'> <strong>{$theEvent->name}".($age ? " (" . (date_diff_short($theEvent->when,$theEventThisYear,true,true) > 1 ? date_diff_short($theEvent->when,$theEventThisYear,true,true) . " " . translate("years","năm") : date_diff_short($theEvent->when,$theEventThisYear,true,true) . " " . translate("year","năm")) . ")" : "")."</strong> <span style='font-size: 0.9em;'>".get_date($event[0] . " 00:00:00")."</span></span></div>";
+			$age = false;
+		}
+		?>
+	</div>
+<?php if (!isMobile()): ?>
+</td><td class="wrap" style="width: 50%; text-align: left; vertical-align: top;" valign="top">
+<?php else: ?>
+</div>
+<div class="wrap" style="text-align: left; vertical-align: middle;">
+<?php endif; ?>
+	<div class="box_title"><img src="files/site_images/layout/calendar2-32.png" style="vertical-align: middle;"/><span style="vertical-align: middle;"> <?php echo translate("Events next month","Lể lộc tháng tới"); ?></span></div>
+	<div style="margin-left: <?php echo (isMobile() ? "10" : "38"); ?>px; font-size: 0.8em;">
+		<?php
+		$age = false;
+		foreach ($events_next_month as $event){
+			$theEvent = mysql_fetch_object(mysql_query("SELECT * FROM `events` WHERE `id` = '{$event[1]}'"));
+			$theEventThisYear = $event[0] . " 00:00:00";
+			switch($theEvent->category){
+				case "misc":
+				default:
+					$event_image = "/files/site_images/layout/calendar-16.png";
+					break;
+				case "holiday_f":
+					$event_image = "/files/site_images/layout/mistletoe-16.png";
+					break;
+				case "holiday_v":
+					$event_image = "/files/site_images/layout/shamrock-16.png";
+					break;
+				case "get_together":
+					$event_image = "/files/site_images/layout/get_together-16.png";
+					break;
+				case "anniversary":
+					$age = true;
+					$event_image = "/files/site_images/layout/anniversary-16.png";
+					break;
+			}
+			echo "<div><img src='{$event_image}' style='vertical-align: middle;'/><span style='vertical-align: middle;'> <strong>{$theEvent->name}".($age ? " (" . (date_diff_short($theEvent->when,$theEventThisYear,true,true) > 1 ? date_diff_short($theEvent->when,$theEventThisYear,true,true) . " " . translate("years","năm") : date_diff_short($theEvent->when,$theEventThisYear,true,true) . " " . translate("year","năm")) . ")" : "")."</strong> <span style='font-size: 0.9em;'>".get_date($event[0] . " 00:00:00")."</span></span></div>";
+			$age = false;
+		}
+		?>
+	</div>
+<?php if (!isMobile()): ?>
+</td></tr></table>
+<?php else: ?>
+</div>
+<?php endif; ?>

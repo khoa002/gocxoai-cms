@@ -1,0 +1,65 @@
+<?php
+if (!isset($_SESSION["in"]) OR !isset($_SESSION["root_path"]) OR !isset($_SESSION["user"])) { die(); }
+require_once("{$_SESSION["root_path"]}/inc.php");
+$user = new User($_SESSION["user"]);
+?>
+<?php if (!isMobile()): ?>
+<table align="center" cellpadding="0" cellspacing="3" border="0"><tr><td class="wrap">
+<?php else: ?>
+<div class="wrap" style="margin: 0 3px;">
+<?php endif; ?>
+	<style type="text/css"> #site-nav a{ margin: 0 3px; } </style>
+	<div id="site-nav" style="vertical-align: middle; font-size: 1em; font-weight: bold;<?php if (!isMobile()) echo "display: inline-block; float: left; margin: 2px; white-space: nowrap;"; ?>">
+		<a id="link_home" class="qtip_me" title="<?php echo translate("Go back to the main page","Trở về trang chính"); ?>" onClick="javascript: load_page('front.php');"><img src="files/site_images/layout/home-32.png" style="vertical-align: middle;"/></a>
+		<a id="link_discussions" class="qtip_me" title="<?php echo translate("View the discussions page","Xem trang thảo luận"); ?>" onClick="javascript: load_page('discussions.php?start=0&sortmethod=1&numPerPage=0');"><img src="files/site_images/layout/discussion-32.png" style="vertical-align: middle;"/></a>
+		<a id="link_usercp" class="qtip_me" title="<?php echo translate("Your control panel and settings for the site","Bảng điều chỉnh và tùy chọn cho hệ thống"); ?>" onClick="javascript: load_page('usercp.php');"><img src="files/site_images/layout/id-32.png" style="vertical-align: middle;"/></a>
+		<a id="link_logout" class="qtip_me" title="<?php echo translate("Log out","Thoát khỏi hệ thống"); ?>" onClick="javascript: silent_load('actions/logout.php');"><img src="files/site_images/layout/logout-32.png" style="vertical-align: middle;"/></a>
+	</div>
+<?php if (!isMobile()): ?></td><td class="wrap">
+<?php else: ?>
+</div>
+<div class="wrap" style="margin: 0 3px;">
+<?php endif; ?>
+	<form id="search_form" name="search_form"<?php if (!isMobile()) echo " style=\"display: inline-block; float: left; margin: 2px; white-space: nowrap;\""; ?>>
+		<input type="text" id="search_query" name="search_query"/>
+		<button type="submit" style="font-size: 0.8em;"><?php echo translate("Search","Tìm"); ?></button>
+	</form>
+	<script type="text/javascript">
+		$("#search_form").submit(function(e){
+			e.preventDefault();
+			if ( (!$.trim($("#search_query").val())) ){
+				alert("<?php echo translate("Enter a search term","Điền vào từ để tìm"); ?>");
+				$("#search_query").focus();
+				return false;
+			}
+			if ( $("#search_query").val().length < 4 && isNumber($("#search_query").val()) == false ){
+				alert("<?php echo translate("Please enter at least 4 characters","Xin điền vào ít nhất 4 ký tự"); ?>");
+				return false;
+			}
+			load_page("search.php?q=" + $("#search_query").val());
+		});
+	</script>
+<?php if (!isMobile()): ?></td><td class="wrap">
+<?php else: ?>
+</div>
+<div class="wrap" style="margin: 0 3px;">
+<?php endif; ?>
+	<div id="activity_list"<?php if (!isMobile()) echo " style=\"display: inline-block; float: left; margin: 2px;\""; ?>>
+		<div style="text-align: left; font-size: 0.9em;">
+			<div id="user_list">
+			<?php
+			$result = mysql_query("SELECT * FROM `users` WHERE `active` = '1' ORDER BY `last_seen` DESC");
+			$output = "";
+			while($row = mysql_fetch_object($result)){
+				$member = new User($row->username);
+				if ($member->username == $user->username) continue;
+				echo "<span style='display: inline-block; white-space: nowrap;'><span style='margin: 0 2px; vertical-align: middle; border-bottom: 1px solid #{$member->color};'><strong>{$member->name}</strong></span><span style='font-size: 0.8em; margin: 0 2px;'> ".(date_diff_short($member->last_seen) == "0" ? translate("Just now...","Mới đây...") : (date_diff_short($member->last_seen) === -1 ? translate("Unknown","Không biết") : date_diff_short($member->last_seen)." ".translate("ago","trước")))."</span></span>";
+			}
+			?></div>
+		</div>
+	</div>
+<?php if (!isMobile()): ?>
+</td></tr></table>
+<?php else: ?>
+</div>
+<?php endif; ?>

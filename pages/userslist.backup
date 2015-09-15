@@ -1,0 +1,60 @@
+<?php
+session_start();
+if (isset($_SERVER["QUERY_STRING"])) $queries = $_SERVER["QUERY_STRING"];
+if (!isset($_SESSION["root_path"]) OR !isset($_SESSION["in"]) OR !isset($_SESSION["user"])) { header("Location: /index.php".(isset($queries) ? "?{$queries}" : ""),true); die(); }
+require_once("{$_SESSION["root_path"]}/inc.php");
+require_once("{$_SESSION["root_path"]}/scripts_each_page.php");
+require_once("{$_SESSION["root_path"]}/page_top.php");
+$user = new User($_SESSION["user"]);
+$user->set_last_seen("viewpage:userslist");
+
+$sortby = "display_name";
+$sortorder = "ASC";
+if (isset($_REQUEST["sort"])){
+    // 'sort' must be 'name___order' format
+    list($sortby,$sortorder) = explode("___",$_REQUEST["sort"]);
+}
+?>
+<script type="text/javascript">
+$(function(){
+    // setting the page title
+    $(function(){ top.document.title = "<?php echo translate("Users list","Danh bạ"); ?>"; });
+    // qTip crap
+    $.fn.qtip.defaults.position.target = $(".mascot");
+    $.fn.qtip.defaults.position.my = "center left";
+    $.fn.qtip.defaults.position.at = "center right";
+    $.fn.qtip.defaults.style.classes = "ui-tooltip-green ui-tooltip-shadow";
+})
+</script>
+<table class="wrap" width="100%" cellspacing="0" cellpadding="1" border="0" style="font-size: 1em; margin: 10px 0; text-align: left;">
+	<tr style="font-size: 1.1em;">
+		<th><a onClick="javascript: load_page('userslist.php?<?php echo "sort=display_name___".($sortorder == "ASC" ? "DESC" : "ASC"); ?>');"><img src="files/site_images/layout/user-16.png" style="vertical-align: middle;"/> <span style="vertical-align: middle;"><?php echo translate("Name","Tên"); ?></span></a></th>
+		<th><a onClick="javascript: load_page('userslist.php?<?php echo "sort=dob___".($sortorder == "ASC" ? "DESC" : "ASC"); ?>');"><img src="files/site_images/layout/birthday-16.png" style="vertical-align: middle;"/> <span style="vertical-align: middle;"><?php echo translate("Birthdate","Ngày sinh"); ?></span></a></th>
+		<th><a onClick="javascript: load_page('userslist.php?<?php echo "sort=email___".($sortorder == "ASC" ? "DESC" : "ASC"); ?>');"><img src="files/site_images/layout/email-16.png" style="vertical-align: middle;"/> <span style="vertical-align: middle;"><?php echo translate("Email","Địa chỉ điện thư"); ?></span></a></th>
+		<th><a onClick="javascript: load_page('userslist.php?<?php echo "sort=phone_home___".($sortorder == "ASC" ? "DESC" : "ASC"); ?>');"><img src="files/site_images/layout/phone-16.png" style="vertical-align: middle;"/> <span style="vertical-align: middle;"><?php echo translate("Home phone","Điện thoại nhà"); ?></span></a></th>
+		<th><a onClick="javascript: load_page('userslist.php?<?php echo "sort=phone_cell___".($sortorder == "ASC" ? "DESC" : "ASC"); ?>');"><img src="files/site_images/layout/cellphone-16.png" style="vertical-align: middle;"/> <span style="vertical-align: middle;"><?php echo translate("Cell phone","Điện thoại di động"); ?></span></a></th>
+		<th><a onClick="javascript: load_page('userslist.php?<?php echo "sort=address___".($sortorder == "ASC" ? "DESC" : "ASC"); ?>');"><img src="files/site_images/layout/home2-16.png" style="vertical-align: middle;"/> <span style="vertical-align: middle;"><?php echo translate("Address","Địa chỉ nhà"); ?></span></a></th>
+		<th><a onClick="javascript: load_page('userslist.php?<?php echo "sort=exp___".($sortorder == "ASC" ? "DESC" : "ASC"); ?>');"><img src="files/site_images/layout/check-16.png" style="vertical-align: middle;"/> <span style="vertical-align: middle;"><?php echo translate("Achievement","Thành tích"); ?></span></a></th>
+	</tr>
+	<?php
+	$result = mysql_query("SELECT * FROM `users` ORDER BY `{$sortby}` {$sortorder}");
+	$even = false;
+	while ($row = mysql_fetch_object($result)){
+		$member = new User($row->username);
+		$level = $member->calc_level();
+		echo "<tr style='font-size: 0.9em;'>";
+		echo "<td style='".((isset($_REQUEST["who"]) AND $_REQUEST["who"] == $member->username) ? " background-color: #c4df9b" : ($even ? " background-color: #eee" : ""))."'><a id='{$member->username}_image' href='get_file.php?type=images_user_avatars&id={$member->username}'><img src='get_file.php?type=images_user_avatars&id={$member->username}&thumbnail=true' width='50' height='50'/></a> <strong><a onClick=\"javascript: load_page('profile.php?who={$member->username}');\">{$member->name}</a></strong></td>";
+		echo "<script type='text/javascript'>$('#{$member->username}_image').fancybox({ openEffect	: 'elastic', closeEffect	: 'elastic', type : 'image', padding : 5, helpers : { title: { type : 'over' } } });</script>";
+		echo "<td style='".((isset($_REQUEST["who"]) AND $_REQUEST["who"] == $member->username) ? " background-color: #c4df9b" : ($even ? " background-color: #eee" : ""))."'>".get_date($member->dob,"NO_OFFSET")."</td>";
+		echo "<td style='".((isset($_REQUEST["who"]) AND $_REQUEST["who"] == $member->username) ? " background-color: #c4df9b" : ($even ? " background-color: #eee" : ""))."'>".(empty($member->email) ? "" : "<a href='mailto:{$member->email}'>{$member->email}</a>")."</td>";
+		echo "<td style='".((isset($_REQUEST["who"]) AND $_REQUEST["who"] == $member->username) ? " background-color: #c4df9b" : ($even ? " background-color: #eee" : ""))."'>{$member->get_phone_home()}</td>";
+		echo "<td style='".((isset($_REQUEST["who"]) AND $_REQUEST["who"] == $member->username) ? " background-color: #c4df9b" : ($even ? " background-color: #eee" : ""))."'>{$member->get_phone_cell()}</td>";
+		echo "<td style='".((isset($_REQUEST["who"]) AND $_REQUEST["who"] == $member->username) ? " background-color: #c4df9b" : ($even ? " background-color: #eee" : ""))."'>".(!empty($member->address) ? "<a target='_blank' href='http://maps.google.com/maps?q={$member->get_address()}'>{$member->get_address()}</a>" : "")."</td>";
+		echo "<td style='".((isset($_REQUEST["who"]) AND $_REQUEST["who"] == $member->username) ? " background-color: #c4df9b" : ($even ? " background-color: #eee" : ""))."'>{$level["progress_bar_with_info"]}</td>";
+		echo "</tr>";
+		$even = !$even;
+	}
+	?>
+</table>
+
+<?php require_once("{$_SESSION["root_path"]}/page_bottom.php"); ?>

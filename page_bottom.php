@@ -1,0 +1,6 @@
+<?php
+if (!isset($_SESSION["in"]) OR !isset($_SESSION["root_path"]) OR !isset($_SESSION["user"])) { die(); }
+require_once("{$_SESSION["root_path"]}/inc.php");
+$user = new User($_SESSION["user"]);
+?>
+<div id="copyright" style="margin: 10px 0; font-size: 0.8em; padding-bottom: 5px; clear: both;"><?php echo "Gốc Cây Xoài © 2010-" . date("Y") . ". " . translate("All rights reserved. Designed & managed by Khoa Nguyễn & Family. The contents and materials presented on this website are intended to be viewable only by the members of the Nguyễn family and/or invited guest(s). If you are not the intended recipient(s) of these materials, you are notified that disclosing, copying, distributing or taking any action in reliance on the contents of this information is strictly prohibited. -- Khoa Nguyễn & Family","Toàn quyền bảo tồn. Thiết kế & điều hành bởi Nguyễn Khoa & Gia Đình. Những nội dung và các tài liệu trình bày trên trang mạng này chỉ được phân phối cho các thành viên gia đình Nguyễn và/hoặc khách được mời xem thảo. Nếu bạn không phải là người đã được dự định tiếp nhận các tài liệu này, xin lưu ý rằng tiết lộ, sao chép, phân phối, hoặc sử dụng dưới mọi hình thức các nội dung thông tin này đều bị nghiêm cấm. -- Khoa Nguyễn & Gia Đình") . " | " . $_SERVER['SERVER_NAME']; ?></div>
